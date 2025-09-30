@@ -15,10 +15,22 @@ let notes = [
 ]
 
 app.get('/api/notes', (req, res) => {
-	res.json(notes)
+	const { date } = req.query
+	if (date) {
+		const matchingDates = notes.filter(
+			(n) => n.date === date
+		)
+		if (matchingDates.length < 1) {
+			return res
+				.status(404)
+				.json({ error: 'No notes found for that date' })
+		}
+		return res.json(matchingDates)
+	}
+	return res.json(notes)
 })
 
-PORT = 3001
+const PORT = 3001
 app.listen(PORT, () => {
 	console.log(`Connected to PORT: ${PORT}`)
 })
