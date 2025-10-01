@@ -31,6 +31,7 @@ app.get('/api/notes/:id', async (req, res) => {
 			return res
 				.status(404)
 				.json({ error: 'note not found' })
+		res.status(200).json(note)
 	} catch (e) {
 		next(e)
 	}
