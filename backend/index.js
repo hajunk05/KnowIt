@@ -30,6 +30,18 @@ app.get('/api/notes', (req, res) => {
 	return res.json(notes)
 })
 
+app.post('/api/notes', (req, res) => {
+	const { date, content } = req.body
+	if (!date || !content) {
+		return res
+			.status(400)
+			.json({ Error: 'Date or content missing' })
+	}
+	const newNote = { date, content }
+	notes = notes.concat(newNote)
+	res.json(newNote)
+})
+
 const PORT = 3001
 app.listen(PORT, () => {
 	console.log(`Connected to PORT: ${PORT}`)
