@@ -5,29 +5,42 @@ app.use(express.json())
 // Example notes before any MongoDB
 let notes = [
 	{
+		id: 1,
 		date: '2025-09-30',
 		content: 'Today I learn many tings',
 	},
 	{
+		id: 2,
 		date: '2025-09-30',
 		content: 'Tomorrow I will learn many things',
 	},
 ]
 
+// Find all notes OR Find all notes of specific date
 app.get('/api/notes', (req, res) => {
 	const { date } = req.query
 	if (date) {
-		const matchingDates = notes.filter(
-			(n) => n.date === date
-		)
+		const dateMatches = notes.filter((n) => n.date === date)
 		if (matchingDates.length < 1) {
 			return res
-				.status(404)
+				.status(200)
 				.json({ error: 'No notes found for that date' })
 		}
-		return res.json(matchingDates)
+		return res.json(dateMatches)
 	}
 	return res.json(notes)
+})
+
+// Find a note of a specific ID
+app.get('/api/notes/:id', (req, res) => {
+	const id = Number(req.params.id)
+	const note = notes.find((n) => n.id === id)
+	if (!note) {
+		return res
+			.status(404)
+			.json({ error: `Missing note of the ID ${id}` })
+	}
+	res.json(note)
 })
 
 app.post('/api/notes', (req, res) => {
@@ -35,11 +48,15 @@ app.post('/api/notes', (req, res) => {
 	if (!date || !content) {
 		return res
 			.status(400)
-			.json({ Error: 'Date or content missing' })
+			.json({ error: 'Date or content missing' })
 	}
-	const newNote = { date, content }
+	const newId =
+		notes.length > 0
+			? Math.max(...notes.map((n) => n.id)) + 1
+			: 1
+	const newNote = { id: newId, date, content }
 	notes = notes.concat(newNote)
-	res.json(newNote)
+	res.status(201).json(newNote)
 })
 
 const PORT = 3001
