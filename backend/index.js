@@ -10,92 +10,82 @@ mongoose
 	.connect(process.env.MONGODB_URI)
 	.then(() => console.log('MongoDB connected'))
 
-// Example notes before any MongoDB
-let notes = [
-	{
-		id: 1,
-		date: '2025-09-30',
-		content: 'Today I learn many tings',
-	},
-	{
-		id: 2,
-		date: '2025-09-30',
-		content: 'Tomorrow I will learn many things',
-	},
-]
-
 // Find all notes OR Find all notes of specific date
-app.get('/api/notes', (req, res) => {
-	const { date } = req.query
-	if (date) {
-		const dateMatches = notes.filter((n) => n.date === date)
-		if (dateMatches.length < 1) {
-			return res.status(200).json([])
-		}
-		return res.json(dateMatches)
+app.get('/api/notes', async (req, res) => {
+	try {
+		const { date } = req.query
+		const query = date ? { date } : {}
+		const notes = await Note.find(query)
+		res.json(notes)
+	} catch (e) {
+		res.status(500).json({ error: 'server error' })
 	}
-	return res.json(notes)
 })
 
 // Find a note of a specific ID
-app.get('/api/notes/:id', (req, res) => {
-	const id = Number(req.params.id)
-	const note = notes.find((n) => n.id === id)
-	if (!note) {
-		return res
-			.status(404)
-			.json({ error: `Missing note of the ID ${id}` })
+app.get('/api/notes/:id', async (req, res) => {
+	try {
+		const id = req.params.id
+		const note = await Note.findById(id)
+		if (!note)
+			return res
+				.status(404)
+				.json({ error: 'note not found' })
+	} catch (e) {
+		res.status(400).end()
 	}
-	return res.json(note)
 })
 
-app.post('/api/notes', (req, res) => {
-	const { date, content } = req.body
-	if (!date || !content) {
-		return res
-			.status(400)
-			.json({ error: 'Date or content missing' })
+app.post('/api/notes', async (req, res) => {
+	try {
+		const { date, content } = req.body
+		if (!date || !content) {
+			return res
+				.status(400)
+				.json({ error: 'Data or content missing' })
+		}
+		const saved = await new Note({ date, content }).save()
+		res.status(201).json(saved)
+	} catch (e) {
+		res.status(400).end()
 	}
-	const newId =
-		notes.length > 0
-			? Math.max(...notes.map((n) => n.id)) + 1
-			: 1
-	const newNote = { id: newId, date, content }
-	notes = notes.concat(newNote)
-	return res.status(201).json(newNote)
 })
 
-app.delete('/api/notes/:id', (req, res) => {
-	const id = Number(req.params.id)
-	const updatedNotes = notes.filter((n) => n.id !== id)
-	if (notes.length === updatedNotes.length) {
-		return res
-			.status(404)
-			.json({ error: `Missing note of ID ${id}` })
+app.delete('/api/notes/:id', async (req, res) => {
+	try {
+		const deleted = await Note.findByIdAndDelete(
+			req.params.id
+		)
+		if (!deleted)
+			return res
+				.status(404)
+				.json({ error: 'note not found' })
+		res.status(204).end()
+	} catch {
+		res.status(400)
 	}
-	notes = updatedNotes
-	res.status(204).end()
 })
 
-app.put('/api/notes/:id', (req, res) => {
-	const id = Number(req.params.id)
-	const { content } = req.body
-
-	if (!content) {
-		return res
-			.status(400)
-			.json({ error: 'Content missing' })
+app.put('/api/notes/:id', async (req, res) => {
+	try {
+		const { date, content } = req.body
+		if (!date || !content)
+			return res
+				.status(400)
+				.json({ error: 'Update content missing' })
+		const updateNote = { date, content }
+		const updated = await Note.findByIdAndUpdate(
+			req.params.id,
+			updateNote
+		)
+		if (!updated)
+			return res
+				.status(404)
+				.json({ error: `No note matches the ID ${id}` })
+		res.json(updated)
+	} catch (e) {
+		res.status(400)
 	}
-
-	const noteIndex = notes.findIndex((n) => n.id === id)
-
-	if (noteIndex === -1) {
-		return res
-			.status(404)
-			.json({ error: `Note with ID ${id} not found` })
-	}
-	notes[noteIndex] = { ...notes[noteIndex], content }
-	return res.json(notes[noteIndex])
 })
 
 const unknownEndpoint = (req, res) => {
