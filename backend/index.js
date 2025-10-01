@@ -90,6 +90,11 @@ app.put('/api/notes/:id', (req, res) => {
 	return res.json(notes[noteIndex])
 })
 
+const unknownEndpoint = (req, res) => {
+	res.status(404).send({ error: 'Unknown endpoint' })
+}
+app.use(unknownEndpoint)
+
 const PORT = 3001
 app.listen(PORT, () => {
 	console.log(`Connected to PORT: ${PORT}`)
