@@ -18,7 +18,7 @@ app.get('/api/notes', async (req, res) => {
 		const notes = await Note.find(query)
 		res.json(notes)
 	} catch (e) {
-		res.status(500).json({ error: 'server error' })
+		next(e)
 	}
 })
 
@@ -32,7 +32,7 @@ app.get('/api/notes/:id', async (req, res) => {
 				.status(404)
 				.json({ error: 'note not found' })
 	} catch (e) {
-		res.status(400).end()
+		next(e)
 	}
 })
 
@@ -47,7 +47,7 @@ app.post('/api/notes', async (req, res) => {
 		const saved = await new Note({ date, content }).save()
 		res.status(201).json(saved)
 	} catch (e) {
-		res.status(400).end()
+		next(e)
 	}
 })
 
@@ -62,7 +62,7 @@ app.delete('/api/notes/:id', async (req, res) => {
 				.json({ error: 'note not found' })
 		res.status(204).end()
 	} catch {
-		res.status(400)
+		next(e)
 	}
 })
 
@@ -76,7 +76,12 @@ app.put('/api/notes/:id', async (req, res) => {
 		const updateNote = { date, content }
 		const updated = await Note.findByIdAndUpdate(
 			req.params.id,
-			updateNote
+			updateNote,
+			{
+				new: true, // returns the updated doc
+				runValidators: true, // enforces schema validation on update
+				context: 'query', // needed for some validators and minlength.
+			}
 		)
 		if (!updated)
 			return res
@@ -84,7 +89,7 @@ app.put('/api/notes/:id', async (req, res) => {
 				.json({ error: `No note matches the ID ${id}` })
 		res.json(updated)
 	} catch (e) {
-		res.status(400)
+		next(e)
 	}
 })
 
@@ -92,6 +97,22 @@ const unknownEndpoint = (req, res) => {
 	res.status(404).send({ error: 'Unknown endpoint' })
 }
 app.use(unknownEndpoint)
+
+const errorHandler = (err, req, res, next) => {
+	if (err.name === 'CastError') {
+		return res
+			.status(400)
+			.json({ error: 'malformatted id' })
+	}
+
+	if (err.name === 'ValidationError') {
+		return res.status(400).json({ error: err.message })
+	}
+
+	res.status(500).json({ error: 'server error' })
+}
+
+app.use(errorHandler)
 
 const PORT = 3001
 app.listen(PORT, () => {
