@@ -38,7 +38,7 @@ app.get('/api/notes/:id', (req, res) => {
 			.status(404)
 			.json({ error: `Missing note of the ID ${id}` })
 	}
-	res.json(note)
+	return res.json(note)
 })
 
 app.post('/api/notes', (req, res) => {
@@ -54,7 +54,7 @@ app.post('/api/notes', (req, res) => {
 			: 1
 	const newNote = { id: newId, date, content }
 	notes = notes.concat(newNote)
-	res.status(201).json(newNote)
+	return res.status(201).json(newNote)
 })
 
 app.delete('/api/notes/:id', (req, res) => {
@@ -67,6 +67,27 @@ app.delete('/api/notes/:id', (req, res) => {
 	}
 	notes = updatedNotes
 	res.status(204).end()
+})
+
+app.put('/api/notes/:id', (req, res) => {
+	const id = Number(req.params.id)
+	const { content } = req.body
+
+	if (!content) {
+		return res
+			.status(400)
+			.json({ error: 'Content missing' })
+	}
+
+	const noteIndex = notes.findIndex((n) => n.id === id)
+
+	if (noteIndex === -1) {
+		return res
+			.status(404)
+			.json({ error: `Note with ID ${id} not found` })
+	}
+	notes[noteIndex] = { ...notes[noteIndex], content }
+	return res.json(notes[noteIndex])
 })
 
 const PORT = 3001
