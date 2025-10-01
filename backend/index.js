@@ -1,6 +1,14 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 app.use(express.json())
+const mongoose = require('mongoose')
+const Note = require('./models/note')
+
+mongoose.set('strictQuery', false)
+mongoose
+	.connect(process.env.MONGODB_URI)
+	.then(() => console.log('MongoDB connected'))
 
 // Example notes before any MongoDB
 let notes = [
