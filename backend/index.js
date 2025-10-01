@@ -21,10 +21,8 @@ app.get('/api/notes', (req, res) => {
 	const { date } = req.query
 	if (date) {
 		const dateMatches = notes.filter((n) => n.date === date)
-		if (matchingDates.length < 1) {
-			return res
-				.status(200)
-				.json({ error: 'No notes found for that date' })
+		if (dateMatches.length < 1) {
+			return res.status(200).json([])
 		}
 		return res.json(dateMatches)
 	}
@@ -57,6 +55,18 @@ app.post('/api/notes', (req, res) => {
 	const newNote = { id: newId, date, content }
 	notes = notes.concat(newNote)
 	res.status(201).json(newNote)
+})
+
+app.delete('/api/notes/:id', (req, res) => {
+	const id = Number(req.params.id)
+	const updatedNotes = notes.filter((n) => n.id !== id)
+	if (notes.length === updatedNotes.length) {
+		return res
+			.status(404)
+			.json({ error: `Missing note of ID ${id}` })
+	}
+	notes = updatedNotes
+	res.status(204).end()
 })
 
 const PORT = 3001
